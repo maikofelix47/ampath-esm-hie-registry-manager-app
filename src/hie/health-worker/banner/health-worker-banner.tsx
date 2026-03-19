@@ -26,6 +26,7 @@ const HealthWorkerBanner: React.FC<HealthWorkerBannerProps> = () => {
   }, []);
 
   async function getProviderDetails(refresh?: boolean) {
+    setLoading(true);
     const providerUuid = session.currentProvider.uuid;
     const provider = await getProviderByUuid(providerUuid);
     const { nationalId, licenseNo } = getProviderAttributes(provider);
@@ -39,10 +40,27 @@ const HealthWorkerBanner: React.FC<HealthWorkerBannerProps> = () => {
       searchParams['refresh'] = refresh;
     }
     if (nationalId || licenseNo) {
-      setLoading(true);
-      const practitioner = await searchPractitioner(searchParams, locationUuid);
-      setPractitioner(practitioner);
-      checkLicenseValidity(practitioner.licenses);
+      try {
+        const practitioner = await searchPractitioner(searchParams, locationUuid);
+        setPractitioner(practitioner);
+        showSnackbar({
+          kind: 'success',
+          title: 'Successfully synced health worker records',
+          subtitle: 'Successfully synced health worker records',
+        });
+        checkLicenseValidity(practitioner.licenses);
+      } catch (error) {
+        showSnackbar({
+          kind: 'error',
+          title: 'Error syncing health worker records',
+          subtitle:
+            error.message ??
+            'An error occurred while syncing health worker details. Please Try again or contact support',
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else {
       setLoading(false);
     }
   }
